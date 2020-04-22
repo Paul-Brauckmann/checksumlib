@@ -37,8 +37,16 @@ class _Checksum:
     def __init__(self, algorithm: str = ''):
         self._algorithm = algorithm
 
-    def __eq__(self, other):
-        not NotImplementedError
+    def __eq__(self, checksum) -> bool:
+        if isinstance(checksum, bytes):
+            return self.to_bytes() == checksum
+        if isinstance(checksum, int):
+            return self.to_int() == checksum
+        if isinstance(checksum, str):
+            return self.to_str() == checksum
+        if isinstance(checksum, self.__class__):
+            return self.to_int() == checksum.to_int()
+        return False
 
     def __bytes__(self):
         return self.to_bytes()
@@ -82,9 +90,6 @@ class CRCChecksum(_Checksum):
         self._crc = getattr(zlib, self._algorithm)
         self._c = 0
 
-    def __eq__(self, other) -> bool:
-        pass
-
     @staticmethod
     def get_algorithms() -> set:
         return {'adler32', 'crc32'}
@@ -111,20 +116,13 @@ class HashChecksum(_Checksum):
         super().__init__(algorithm)
         self._hash = hashlib.new(algorithm)
 
-        print(length)
-
         if not length:
-            print('test')
             length = self._DEFAULT_SHAKE_LENGTH
         if not isinstance(length, int):
             TypeError('length should be from type int')
         if length <= 0:
             raise ValueError('the length must be greater than 0')
         self._length = length
-        print(length)
-
-    def __eq__(self, other) -> bool:
-        pass
 
     @staticmethod
     def get_algorithms() -> set:
