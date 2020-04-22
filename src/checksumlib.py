@@ -3,7 +3,7 @@
 import hashlib
 import zlib
 
-from pathlib import Path
+from pathlib import Path, PosixPath, WindowsPath
 from typing import Union, Tuple, List
 
 
@@ -23,7 +23,7 @@ class FileChecksum:
         """
         if not algorithm:
             algorithm = self._DEFAULT_ALGORITHMS
-        if type(algorithm) is not str:
+        if not isinstance(algorithm, str):
             raise TypeError('algorithm should be from type str')
         if algorithm not in self.available_algorithms():
             raise ValueError('algorithm is not a valid checksum algorithm')
@@ -31,7 +31,7 @@ class FileChecksum:
 
         if not chunk_size:
             chunk_size = self._DEFAULT_CHUNK_SIZE
-        if type(chunk_size) is not int:
+        if not isinstance(chunk_size, int):
             raise TypeError('chunk_size should be from type int')
         if chunk_size <= 0:
             raise ValueError('the chunk_size must be greater than 0')
@@ -62,11 +62,11 @@ class FileChecksum:
         :param pattern: pattern to filter for files
         :return: returns a list of tuples where the first is the Path to the file and the second the checksum
         """
-        if type(pattern) is not str:
+        if not isinstance(pattern, str):
             TypeError('patter should be from type str')
 
         filesdir = self._validate_dir_path(dir_path)
-        return [(file, self._get_checksum(file) for file in filesdir.rglob(pattern) if file.is_file())]
+        return [(file, self._get_checksum(file)) for file in filesdir.rglob(pattern) if file.is_file()]
 
     def create_checksum_dir(self, dir_path: Union[str, Path], pattern: str = '*') -> Union[hash, int]:
         """
@@ -75,7 +75,7 @@ class FileChecksum:
         :param pattern: pattern to filter for files
         :return:
         """
-        if type(pattern) is not str:
+        if not isinstance(pattern, str):
             TypeError('patter should be from type str')
 
         filesdir = self._validate_dir_path(dir_path)
@@ -113,7 +113,7 @@ class FileChecksum:
         :param pattern: pattern to filter for files
         :return:
         """
-        if type(pattern) is not str:
+        if not isinstance(pattern, str):
             TypeError('patter should be from type str')
 
         filesdir = self._validate_dir_path(dir_path)
@@ -123,20 +123,20 @@ class FileChecksum:
         args = []
 
         if self._algorithm in _SHAKE:
-            if type(length) is not int:
+            if not isinstance(length, int):
                 TypeError('length should be from type int')
             if length <= 0:
                 raise ValueError('the length must be greater than 0')
             args.append(length)
 
-        if type(checksum) is int and self._algorithm in self._ZLIB_ALGORITHMS:
+        if isinstance(checksum, int) and self._algorithm in self._ZLIB_ALGORITHMS:
             return checksum == self_checksum
 
         if isinstance(checksum, type(hashlib.new(self._algorithm))):
             return checksum.digest(*args) == self_checksum.digest(*args)
-        if type(checksum) is bytes:
+        if isinstance(checksum, bytes):
             return checksum == self_checksum.digest(*args)
-        if type(checksum) is str:
+        if isinstance(checksum, str):
             return checksum == self_checksum.hexdigest(*args)
 
         return False
@@ -154,9 +154,9 @@ class FileChecksum:
         return dir_path
 
     def _validate_path(self, path: Union[str, Path]) -> Path:
-        if type(path) is str:
+        if isinstance(path, str):
             path = Path(path)
-        if Path not in path.__class__.__mro__:
+        if not isinstance(path, (PosixPath, WindowsPath)):
             raise TypeError(f'file_path should be from type Path but is from type {type(path)}')
         return path
 

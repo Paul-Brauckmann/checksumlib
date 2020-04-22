@@ -1,4 +1,4 @@
-from checksumlib import FileChecksum
+from src.checksumlib import FileChecksum
 
 
 
