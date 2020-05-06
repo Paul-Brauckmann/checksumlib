@@ -7,28 +7,32 @@ def _validate_algorithm(func):
         if not isinstance(algorithm, str):
             raise TypeError('algorithm should be from type str')
 
-        algorithms = cls.get_algorithms() if not isinstance(cls, MetaChecksum) else _Checksum.get_algorithms()
+        algorithms = cls.get_algorithms() if not isinstance(cls, _MetaChecksum) else _Checksum.get_algorithms()
         if algorithm not in algorithms:
             raise ValueError('algorithm is not a valid _Checksum algorithm')
         return func(cls, algorithm, *args, **kwargs)
     return wrapper
 
 
-class MetaChecksum(type):
+class _MetaChecksum(type):
 
     @_validate_algorithm
     def __call__(self, algorithm: str = '', *args, **kwargs):
         if not algorithm:
-            algorithm = self._DEFAULT_ALGORITHMS
+            algorithm = self.DEFAULT_ALGORITHMS
 
         for cls in _Checksum.__subclasses__():
             if algorithm in cls.get_algorithms():
                 return cls(algorithm, *args, **kwargs)
 
 
-class Checksum(metaclass=MetaChecksum):
+class Checksum(metaclass=_MetaChecksum):
 
-    _DEFAULT_ALGORITHMS = 'sha1'
+    DEFAULT_ALGORITHMS = 'sha1'
+
+    @staticmethod
+    def available_algorithms() -> set:
+        return _Checksum.get_algorithms()
 
 
 class _Checksum:
@@ -39,28 +43,30 @@ class _Checksum:
 
     def __eq__(self, checksum) -> bool:
         if isinstance(checksum, bytes):
-            return self.to_bytes() == checksum
+            return bytes(self) == checksum
         if isinstance(checksum, int):
-            return self.to_int() == checksum
+            return int(self) == checksum
         if isinstance(checksum, str):
-            return self.to_str() == checksum
+            return str(self) == checksum
         if isinstance(checksum, self.__class__):
-            return self.to_int() == checksum.to_int()
+            if self.get_algorithm() is not checksum.get_algorithm():
+                return False
+            return bytes(self) == bytes(checksum)
         return False
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return self.to_bytes()
 
-    def __int__(self):
+    def __int__(self) -> int:
         return self.to_int()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_str()
 
     def __add__(self, data: bytes):
         self.update(data)
 
-    def get_algorithm(self):
+    def get_algorithm(self) -> str:
         return self._algorithm
 
     @staticmethod
@@ -83,7 +89,7 @@ class _Checksum:
         raise NotImplementedError
 
 
-class CRCChecksum(_Checksum):
+class CRC32Checksum(_Checksum):
 
     def __init__(self, algorithm: str = ''):
         super().__init__(algorithm)
@@ -141,6 +147,4 @@ class HashChecksum(_Checksum):
         self._hash.update(data)
 
     def _get_args(self) -> list:
-        if self._algorithm not in self._SHAKE:
-            return []
-        return [self._length]
+        return [self._length] if self._algorithm in self._SHAKE else []
