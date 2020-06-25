@@ -126,3 +126,5 @@ from src.checksumlib import FileChecksum
 # print(whirlpool.verify_checksum_file("test.txt", whirlpool.create_checksum_file("test.txt").digest()))
 # print(whirlpool.verify_checksum_file("test.txt", whirlpool.create_checksum_file("test.txt")))
 
+
+
